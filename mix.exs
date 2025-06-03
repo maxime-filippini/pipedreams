@@ -24,7 +24,8 @@ defmodule PipeDreams.MixProject do
       "site.build": [
         "build",
         fn _ -> Mix.shell().cmd("mix tailwind default", quiet: false) end,
-        fn _ -> Mix.shell().cmd("mix esbuild default", quiet: false) end
+        fn _ -> Mix.shell().cmd("mix esbuild default", quiet: false) end,
+        fn _ -> Mix.shell().cmd("cp assets/favicon.svg output/assets") end
       ]
     ]
   end
