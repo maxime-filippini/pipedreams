@@ -1,6 +1,6 @@
-defmodule OtpExample do
+defmodule OtpTodo do
   @moduledoc """
-  Documentation for `OtpExample`.
+  Documentation for `OtpTodo`.
   """
 
   @doc """
@@ -8,7 +8,7 @@ defmodule OtpExample do
 
   ## Examples
 
-      iex> OtpExample.hello()
+      iex> OtpTodo.hello()
       :world
 
   """

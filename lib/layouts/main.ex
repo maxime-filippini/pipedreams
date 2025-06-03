@@ -18,7 +18,7 @@ defmodule Layouts.Main do
         <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js" integrity="sha384-cMkvdD8LoxVzGF/RPUKAcvmm49FQ0oxwDF3BGKtDXcEc+T1b2N+teh/OJfpU0jr6" crossorigin="anonymous"></script>
       </head>
       <body class="flex flex-col h-screen">
-        <div class="flex-1 flex flex-col p-8">
+        <div class="flex-1 flex flex-col p-4">
         <div class="w-full flex flex border-b-2 mb-8 border-violet-200">
           <Logo.main/>
           <div class="ml-auto"></div>
