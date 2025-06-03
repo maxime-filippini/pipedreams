@@ -24,6 +24,8 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
 
+      - name: Get dependencies
+        run: mix deps.get
       - name: Build Site
         run: mix site.build
 
