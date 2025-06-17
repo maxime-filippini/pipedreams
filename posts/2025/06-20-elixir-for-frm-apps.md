@@ -1,7 +1,7 @@
 %{
-title: "👩🏽‍🚀 Data exploration in Elixir",
+title: "📈 Can I just switch to Elixir for building financial risk management applications?",
 author: "Maxime Filippini",
-tags: ["elixir", "data analysis"],
+tags: ["elixir", "risk management", "finance", "data analysis", "python"],
 description: """
 TBD TBD TBD TBD
 """
