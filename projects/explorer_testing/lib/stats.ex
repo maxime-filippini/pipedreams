@@ -1,0 +1,2 @@
+defmodule Stats do
+end

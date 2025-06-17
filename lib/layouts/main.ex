@@ -11,6 +11,7 @@ defmodule Layouts.Main do
     <!DOCTYPE html>
     <html lang="en">
       <head>
+        <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="stylesheet" href="/assets/app.css" />
         <script type="text/javascript" src="/assets/app.js"></script>
@@ -19,12 +20,12 @@ defmodule Layouts.Main do
         <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js" integrity="sha384-cMkvdD8LoxVzGF/RPUKAcvmm49FQ0oxwDF3BGKtDXcEc+T1b2N+teh/OJfpU0jr6" crossorigin="anonymous"></script>
       </head>
       <body class="flex flex-col h-screen">
-        <div class="flex-1 flex flex-col p-4">
-        <div class="w-full flex flex border-b-2 mb-8 border-violet-200">
+        <div class="flex flex-col flex-1 p-4">
+        <div class="flex w-full mb-8 border-b-2 border-violet-200">
           <Logo.main/>
           <div class="ml-auto"></div>
         </div>
-          <main class="flex-1 container mx-auto max-w-3xl">
+          <main class="container flex-1 max-w-3xl mx-auto">
             <%= render_slot(@inner_block) %>
           </main>
           <div class="flex gap-8">

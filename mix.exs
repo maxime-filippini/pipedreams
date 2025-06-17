@@ -25,7 +25,8 @@ defmodule PipeDreams.MixProject do
         "build",
         fn _ -> Mix.shell().cmd("mix tailwind default", quiet: false) end,
         fn _ -> Mix.shell().cmd("mix esbuild default", quiet: false) end,
-        fn _ -> Mix.shell().cmd("cp assets/favicon.svg output/assets") end
+        fn _ -> Mix.shell().cmd("cp assets/favicon.svg output/assets") end,
+        fn _ -> Mix.shell().cmd("cp -r assets/images output/assets/images") end
       ]
     ]
   end

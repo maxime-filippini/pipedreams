@@ -5,13 +5,20 @@ defmodule Components.AllPosts do
     ~H"""
       <div class="flex flex-col gap-4">
       <h2 class="text-2xl font-semibold">All posts</h2>
-      <ul class="flex-1 flex flex-col gap-4">
+      <ul class="flex flex-col flex-1 gap-4">
         <li :for={post <- @posts}>
-          <a href={post.path} class="font-mono flex gap-4 bg-violet-100 rounded-lg p-4">
+          <a href={post.path} class="flex gap-4 p-4 font-mono rounded-lg bg-violet-100">
             <p class="w-1/2 sm:w-1/4">[{post.date}]</p>
-            <div class="w-1/2 sm:w-3/4 class flex flex-col gap-2">
+            <div class="flex flex-col w-1/2 gap-4 sm:w-3/4 class">
               <p>{post.title}</p>
-              <p class="italic text-sm hidden sm:block">{post.description}</p>
+              <p class="hidden text-sm italic sm:block">{post.description}</p>
+              <div class="flex gap-4">
+                <ul class="flex gap-2">
+                  <li :for={tag <- post.tags} class="px-2 rounded-lg bg-violet-200">
+                    {tag}
+                  </li>
+                </ul>
+              </div>
             </div>
           </a>
         </li>
