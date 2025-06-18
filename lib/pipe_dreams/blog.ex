@@ -8,7 +8,9 @@ defmodule PipeDreams.Blog do
     as: :posts,
     html_converter: Markdown.Converter
 
-  @posts Enum.sort_by(@posts, & &1.date, {:desc, Date})
+  @posts @posts
+         |> Enum.filter(fn post -> !post.draft? end)
+         |> Enum.sort_by(fn post -> post.date end, {:desc, Date})
 
   def all_posts, do: @posts
 

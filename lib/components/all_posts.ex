@@ -12,8 +12,8 @@ defmodule Components.AllPosts do
             <div class="flex flex-col w-1/2 gap-4 sm:w-3/4 class">
               <p>{post.title}</p>
               <p class="hidden text-sm italic sm:block">{post.description}</p>
-              <div class="flex gap-4">
-                <ul class="flex gap-2">
+              <div class="flex hidden gap-4 sm:block">
+                <ul class="flex flex-wrap gap-2">
                   <li :for={tag <- post.tags} class="px-2 rounded-lg bg-violet-200">
                     {tag}
                   </li>

@@ -22,6 +22,7 @@ defmodule ExplorerTesting.MixProject do
   defp deps do
     [
       {:pythonx, "~> 0.4.0"},
+      {:clipboard, ">= 0.0.0", only: [:dev]},
       {:statistics, "~> 0.6.3"},
       {:nx, "~> 0.9"},
       {:explorer, "~> 0.10.0"},

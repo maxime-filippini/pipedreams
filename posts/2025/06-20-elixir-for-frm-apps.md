@@ -1,78 +1,25 @@
 %{
-title: "📈 Can I just switch to Elixir for building financial risk management applications?",
+draft?: false,
+title: "📈 Elixir, a good fit for financial risk management applications?",
 author: "Maxime Filippini",
 tags: ["elixir", "risk management", "finance", "data analysis", "python"],
 description: """
-TBD TBD TBD TBD
+Can Elixir be used for building finance/risk management-centric apps?
 """
 }
 
 ---
 
-<!--
+Over the years, I’ve grown quite comfortable with Python, mostly during my work as a financial risk manager. It’s a language I know well and have relied on for building data processing pipelines, risk measurement libraries, but also for automating some of the boring stuff, like scraping the web or assembling PDF from e-books for offline studying.
 
-    Intro
+But as time has gone on, I’ve found myself increasingly drawn to functional languages, both for their elegance and for the different mindset they encourage when designing software. It is during this exploration that I have discovered the languages running on the BEAM (the Erlang virtual machine), such as [Gleam](https://gleam.run/) and [Elixir](https://elixir-lang.org/).
 
-Over the years, I've gone to know Python quite well from working in finance.
-But lately, I've been inching more and more towards functional languages, as
-they are much nicer to write. After a quick stint with Gleam, I've now dove
-deep into Elixir. -> Much wider ecosystem, and a compelling macro system.
-
-Elixir brings a certain kind of pleasure that i'm not getting with Python. The
-Phoenix web framework is part of it. In addition, the concurrency model of Elixir
-I find quite exciting.
-
-As I want to apply Elixir to domains that I know well (finance and risk management),
-I am sitting wondering whether Elixir could be a good fit for modelling these
-domains, or whether I will still need to partly rely on Python for these
-applications.
-
-In this post, I go over the existing Elixir ecosystem, and try to fill gaps
-as much as possible before building those applications
-
-    Data exploration
-
-I have never heard of someone using the Python shell to explore data. Although
-it is technically possible, the experience really leaves a lot to be desired.
-Instead, most people working with data will use Jupyter notebooks to analyze
-data, build models, and prepare visualizations.
-
-Elixir has a similar tool up its sleeve, but on steroids: Livebook.
-
-- Supports markdown and LaTeX out of the box, just like Jupyter notebooks
-- Runs in a predictable order. It detects stale cells and reruns them if needed.
-- Full-on application environment. You can run web servers.
-- Interactivity at its core. Smart cells can do many things, from plotting charts,
-
-Let's take a look.
-
-Load a csv - plot the chart. Update the data, chart updates.
-
-
-
-
- -->
-
-Over the years, I’ve grown quite comfortable with Python, mostly during my work
-as a risk manager. It’s a language I know well and have relied on for building
-data processing pipelines, risk measurement libraries, but also for automating
-some of the boring stuff, like scraping the web or assembling PDF from e-books
-for offline studying.
-
-But as time has gone on, I’ve found myself increasingly drawn to functional
-languages, both for their elegance and for the different mindset they encourage
-when designing software. It is during this exploration that I have discovered
-the languages running on the BEAM (the Erlang virtual machine), such as Gleam
-and Elixir.
-
-On top of the avoidance of side effects and the wonderful [pipe operator](https://hexdocs.pm/elixir/enumerable-and-streams.html#the-pipe-operator), these languages
-boast an incredibly compelling concurrency model thanks to the BEAM, where
-spawning super lightweight processes to run code asynchronously is as simple as
-writing:
+On top of the functional philosophy which aims to eliminate or at the very least contain [side-effects](<https://en.wikipedia.org/wiki/Side_effect_(computer_science)>), as well as the wonderful [pipe operator](https://hexdocs.pm/elixir/enumerable-and-streams.html#the-pipe-operator), the BEAM languages boast an incredibly compelling concurrency model thanks to their runtime, where spawning super lightweight processes to run code asynchronously is as simple as writing:
 
 ```elixir
+# This code runs in a process
 x = 10
-spawn(fn -> x ** 2 end) # This code runs in a separate process from the main code
+spawn(fn -> x ** 2 end) # This code runs in another separate process
 ```
 
 Elixir also brings a powerful macro system that transforms the Elixir AST at
@@ -93,11 +40,9 @@ But I work in financial risk management, an area that requires of a programming
 language to provide data exploration capabilities, numerical computing packages
 with decent performance, as well as good tooling.
 
-**Can Elixir tick those boxes?** Would Python still be needed even if we build
-an entire web application in Elixir using the amazing [Phoenix](https://www.phoenixframework.org/)
-framework? In this post, I take a closer look at Elixir’s ecosystem with those
-questions in mind, to determine whether Elixir can truly encompass all of my
-future needs.
+**Can Elixir tick those boxes? To which extent would I still need Python to do that work?**
+
+In this post, I take a closer look at Elixir’s ecosystem with those questions in mind, to determine whether Elixir can realistically replace Python in my workflows, and to start to define the toolbox I will be using going forward.
 
 ## Numerical computing
 
@@ -148,12 +93,12 @@ generate a new key. Should we wish to generate a new vector, backed by the same
 initial seed, we would use that new key to do so.
 </p>
 
-To make operations on tensors efficient, `Nx` allows us to **stage** numerical
-definitions, turning them into computation graphs that will then be compiled
-and optimized, for example to run on the GPU. For example, the `substract`
-function in the following code uses the `defn` macro (as opposed to `def`, which
-is used for normal Elixir functions) provided by `Nx.Defn` to make it operate
-on tensors, and compile it for efficient use.
+For now, `Nx` seems like a replacement for Python's `numpy` library. But, it
+also provides additional functionality. For instance, `Nx` allows us to turn
+our computations into graphs that can be optimized and compiled to run on
+accelerators (GPUs or TPUs).
+
+For example, the `substract` function in the following code uses the `defn` macro (as opposed to `def`, which is used for normal Elixir functions) provided by `Nx.Defn` to make it operate on tensors, and compile it for efficient use.
 
 ```elixir
 defmodule TensorMath do
@@ -185,7 +130,9 @@ end
 {a, b, c} = {1, 2, 3}
 x = 0
 
-Quadratic.gradient(x, a, b, c) |> Nx.to_number() |> IO.inspect()
+Quadratic.gradient(x, a, b, c)
+|> Nx.to_number()
+|> IO.inspect()
 # 2.0
 
 IO.inspect(2 * a * x + b)
@@ -195,29 +142,19 @@ IO.inspect(2 * a * x + b)
 Based on these features, I'd say `Nx` is very capable of powering our calculation
 engines!
 
-### Pythonx
+### The Python escape hatch
 
-The whole purpose of this post is to establish whether working on finance
-applications in Elixir would force me to maintain a separate Python layer, or
-if I could do all my work in Elixir, a language I am more fond of these days.
+The `Nx` team realized that for Elixir to gain adoption for Machine Learning applications, it had to have access to Python libraries in some way, so as to avoid having to reimplement all of those existing algorithms by hand in Elixir, which would prove prohibitively expensive as a preliminary requirement.
 
-But such a question does not have a binary answer. For example, while `Nx` seems
-like a great numerical computing library, re-implementing all of the algorithms
-available in Python may be cost prohibitive. But what are our options then?
+Historically, there has been three main ways of calling Python within Elixir:
 
-1. Call `python` via `System.cmd`. This approach is not ideal because retrieving
-   function outputs may be difficult (parsing `STDOUT` would lead to a loss of context)
-2. Maintain a separate Python service, running in Docker. This approach also
-   has drawbacks, as it would require the set up of a deployment pipeline as well
-   as an API layer.
+1. Call the `python` interpreter via `System.cmd`. This approach is simple, but not ideal when we need to pass data between Python and Elixir.
+2. Maintain a separate Python service. This approach also has drawbacks, as it would require the set up of a deployment pipeline as well as an API layer.
+3. Using a [**Port**](https://hexdocs.pm/elixir/Port.html), which takes care of inter-process communication, using message passing.
 
-As it turns out, there is a third option, [Embedding Python](https://docs.python.org/3/extending/embedding.html),
-using the fact that CPython is also provided as a C library with a documented interface,
-and the ability of Elixir/Erlang to use Native Implemented Functions (or "NIFs" for short).
+This year, a fourth option has been implemented: [`Pythonx`](https://dashbit.co/blog/running-python-in-elixir-its-fine), mostly for use within Livebook (more on that later).
 
-That way, we can run Python within the same OS process as the BEAM, and
-translate Elixir variables to Python variables and vice versa. And we don't even
-have to worry about setting a Python environment separately, as we can directly
+`Pythonx` is a library that allows us to initialize a Python interpreter **in the same OS process as the BEAM VM** (which is different from the other three options), using Native Implemented Functions (or "NIFs" for short) to communicate with Elixir. This is a compelling approach that seems to have great ergonomics. For example, it allows us to directly
 supply a `pyproject.toml` specification and run `uv` from within our Elixir code
 to initialize the interpreter.
 
@@ -241,229 +178,83 @@ dependencies = [
 # :ok
 ```
 
-Because of the Global Interpreter Lock ("GIL") however, we unfortunately cannot
-reasonably expect concurrency via the BEAM by running `Pythonx` in multiple
-BEAM processes. For quick evaluation of Python functions, we can define a single
-Python "service", modelled as a [`GenServer`](https://hexdocs.pm/elixir/1.12/GenServer.html),
-which will receive messages from other BEAM processes and process those messages
-synchronously.
+However, because of the Global Interpreter Lock ("GIL"), we are unfortunately limited to running a single `Pythonx` interpreter per BEAM instance, which means we cannot easily benefit from the concurrency model that Elixir provides.
 
-Such a set up would lead to the following sequence of events taking place if
-two separate processes were to ask for Python calculations to be done.
+For use in a production server where concurrency is likely to be important, we would consider the following patterns:
 
-```mermaid
-sequenceDiagram
-    participant A as Process A
-    participant B as Process B
-    participant P as Python GenServer
-    participant X as Pythonx
-    A->>P: 📩 Run computation
-    P-->>X: Call Python (A)
-    B->>P: 📩 Run computation
-    X-->>P: Result (A)
-    P->>A: 📩 Result
-    P-->>X: Call Python (B)
-    X-->>P: Result (B)
-    P->>B: 📩 Result
-```
+- Using the Port of `System.cmd` approaches defined above, using a pool of worker processes.
+- Call `Pythonx` using [`FLAME`](https://hexdocs.pm/flame/FLAME.html), although the overhead might be a bit too much.
 
-In the example below, I define such a GenServer that can compute the "percent
-point function" (or "PPF", or "quantile") for some probability distributions,
-by calling the appropriate functions in the `scipy.stats` package.
+Finally, using NIFs can be a bit dangerous, as there is often no guarantee that an unhandled exception wouldn't crash the VM process, which removes ruins any chance at fault tolerance, a big selling point of the BEAM.
 
-```elixir
-defmodule Py do
-  use GenServer
-
-  @code_head """
-  from scipy import stats
-
-  """
-
-  # Start the GenServer
-  def start_link do
-    GenServer.start_link(__MODULE__, %{globals: %{}}, name: __MODULE__)
-  end
-
-  # Compute the quantile of a normal distribution
-  def norm_ppf(q, loc \\ 0, scale \\ 1) do
-    GenServer.call(
-      __MODULE__,
-      {:ppf, "stats.norm.ppf(q, loc, scale)", %{"loc" => loc, "scale" => scale, "q" => q}}
-    )
-  end
-
-  # Compute the quantile of a Student-t distributio n
-  def t_ppf(q, dof \\ 1) do
-    GenServer.call(
-      __MODULE__,
-      {:ppf, "stats.t.ppf(q, dof)", %{"dof" => dof, "q" => q}}
-    )
-  end
-
-  # Callback functions
-  @impl true
-  def init(init_arg) do
-    {:ok, init_arg}
-  end
-
-  @impl true
-  def handle_call({:ppf, code, params}, _from, state) do
-    # Python code to be executed
-    code =
-      """
-      #{@code_head}
-
-      #{code}
-      """
-
-    # Evaluate the code via Python code
-    {res, _globals} = Pythonx.eval(code, params)
-
-    # Reply to the caller with the decoded output
-    {:reply, Pythonx.decode(res), state}
-  end
-end
-
-```
+For testing and building models outside of a production environment however, `Pythonx` is a great option, and will see a great deal of use from me.
 
 ## Data exploration
 
-In my mind, exploring data requires the use of several tools:
+In my mind, exploring data requires the following elements to be available to us:
 
 - Some kind of cell-based editor, or at the very least a shell with command
   history and variable explorer.
 - A construct and library for working with tabular data (e.g. dataframes).
-- A library for constructing graphs.
+- A library for constructing charts.
 
 In Python, these boxes are all ticked, as any Python user working with data
 would be very familiar with tools like **Jupyter notebooks**, `pandas` or `polars`,
 and `matplotlib`.
 
-| Aspect            | Tools                                 | Covered |
-| ----------------- | ------------------------------------- | ------- |
-| Editor            | Jupyter notebooks, JupyterLab, Spyder | ✅      |
-| Dataframe library | `pandas`, `polars`                    | ✅      |
-| Graphs library    | `matplotlib`, `seaborn`, `plotly`     | ✅      |
+| Aspect            | Tools                                 | Python? | Elixir? |
+| ----------------- | ------------------------------------- | ------- | ------- |
+| Editor            | Jupyter notebooks, JupyterLab, Spyder | ✅      | ❓      |
+| Dataframe library | `pandas`, `polars`                    | ✅      | ❓      |
+| Graphs library    | `matplotlib`, `seaborn`, `plotly`     | ✅      | ❓      |
 
-### Livebook
+### Livebook - A cell-based code editor for Elixir, and much more
 
 Livebook is a web-based interactive notebook application built for Elixir.
 Much like Jupyter notebooks in the Python ecosystem, Livebook enables us to
 combine code, text, and visualizations in a single, executable document.
 
-However, Livebook
+However, Livebook is much more than a re-implementation of Jupyter notebooks, as it has been built to take full advantage of the BEAM and Elixir. For example, you can use a Livebook to introspect a **live, running system** (e.g. a Phoenix web application) using the power of [Distributed Elixir](https://hexdocs.pm/elixir/distributed-tasks.html). In addition, Livebook is aware of variables used in each cells and will make sure to re-compute any stale cells those variables are involved in, thus avoiding the most stale data issue that is ubiquitous to any Jupyter-based workflow.
 
-### Dataframes, in Elixir
+For a mindblowing demo showing off what Livebook has to offer, I recommend the following talk by Elixir's creator, José Valim:
 
-Working with tensors is great, but in many situations, we will not need to
+<iframe class="w-full" height="400" src="https://www.youtube.com/embed/pas9WdWIBHs?si=vM36kB_QPDmXDQX4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+That's our first box ticked! ✅
+
+### Explorer - An elegant dataframe library
+
+Working with `Nx` tensors is great, but in many situations, we will not need to
 work in multi-dimensional space, and instead, we will have **tabular data**,
 i.e. a set of **labelled**, 1-dimensional arrays. In Python, the excellent
 `pandas` allows us to deal with that type of data quite easily, providing
 convenience functions and tools right at our fingertips.
 
-In Elixir, we have [`Explorer`](https://hexdocs.pm/explorer/Explorer.html),
-which is built on `polars`, but does not aim to match it in terms of
-API. It has an extensive query engine, and can integrate with our `Nx` numerical
-definitions.
+In Elixir, we have [`Explorer`](https://hexdocs.pm/explorer/Explorer.html), a library that wears its influence by [`dplyr`](https://dplyr.tidyverse.org/) on its sleeve, and boasts high speeds by leveraging on a [`polars`](https://pola.rs/) backend.
 
-We show the syntax of its query engine below with an admittedly contrived
-example.
+For users of `polars`, the API will take a little bit to get used to as it is a little bit different, but it does retain the elegance we know and love. The `Explorer` query engine is a powerful tool that allows us to manipulate data using very compact syntax, and plays relatively well with `Nx` numerical definitions, should we need to define our own tensor functions.
 
-```elixir
-require Explorer.DataFrame, as: DF
-require Explorer.Series, as: DF
-
-# Define a new dataframe
-DF.new(%{
-  a: [1, 2, 3, 4, 5, 6],
-  b: [3, 3, 4, 4, 5, 5]
-})
-
-# Add a computed column via a lazy computation
-|> DF.mutate(c: a - b)
-
-# Use conditionals to build new columns
-|> DF.mutate(
-  d:
-    cond do
-      c > 0 -> 1
-      c < 0 -> -1
-      true -> 0
-    end
-)
-
-# Apply functions that operates on series directly
-|> DF.mutate(ee: exp(d))
-
-# Apply Elixir/Erlang functions on each element
-|> Kernel.then(fn df ->
-  df
-  |> DF.put(
-    :ff,
-    DS.transform(df["ee"], fn x ->
-      :math.sqrt(x)
-    end)
-  )
-end)
-
-# Apply a function that operates on tensors
-|> Kernel.then(fn df ->
-  df
-  |> DF.put(
-    :gg,
-    TensorMath.subtract(df["a"], df["b"])
-    |> DS.from_tensor()
-  )
-end)
-
-# Filter based on column values
-|> DF.filter(a < 4)
-
-# Only keep some columns based on a function evaluation
-|> DF.select(fn c -> String.length(c) == 2 end)
-
-# Display the table
-|> DF.print()
-
-#   +--------------------------------------------------+
-#   |    Explorer DataFrame: [rows: 3, columns: 3]     |
-#   +---------------------+--------------------+-------+
-#   |         ee          |         ff         |  gg   |
-#   |        <f64>        |       <f64>        | <s64> |
-#   +=====================+====================+=======+
-#   | 0.36787944117144233 | 0.6065306597126334 | -2    |
-#   +---------------------+--------------------+-------+
-#   | 0.36787944117144233 | 0.6065306597126334 | -1    |
-#   +---------------------+--------------------+-------+
-#   | 0.36787944117144233 | 0.6065306597126334 | -1    |
-#   +---------------------+--------------------+-------+
-```
-
-As you can see, the syntax is very elegant. While the library does not seem to
-be as feature-complete as polars' expression system, we can get quite close by
-bringing in external functions, either to operate on individual values or on
-column tensors.
-
-In the example below, we compute the result of the [Kupiec POF test](https://nl.mathworks.com/help/risk/overview-of-var-backtesting.html)
-on a rolling window basis, by bringing in the `Statistics.Distributions.Chisq`
-module for the computation of the p-values.
+We show off some of these functionalities in the example below, where we compute the result of the [Kupiec POF test](https://nl.mathworks.com/help/risk/overview-of-var-backtesting.html)
+on a rolling window basis based on randomly simulated VaR overshootings.
 
 ```elixir
 require Explorer.DataFrame, as: DF
 require Explorer.Series, as: DS
 
-{arr, _new_key} =
-  Nx.Random.key(1)
-  |> Nx.Random.uniform(shape: {5000})
-
+n = 5000
 var_cf = 0.99
 th_os = 1 - var_cf
 window = 250
-test_cf = 0.95
-pvalue_cutoff = 1 - test_cf
+test_cf = 0.05
 
+{arr, _new_key} =
+  Nx.Random.key(1)
+  |> Nx.Random.uniform(shape: {n})
+
+# Simulated dataset
 DF.new(%{
+  # An incrementing row index
+  idx: Nx.iota({n}) |> DS.from_tensor(),
   rand: DS.from_tensor(arr)
 })
 
@@ -475,20 +266,15 @@ DF.new(%{
       true -> 0
     end
 )
-
 # Aggregate over 250-day windows
 |> DF.mutate(n_os: window_sum(os, ^window))
-
 # Remove while the first window is being built
 |> DF.slice((window - 1)..-1//1)
-
-# Add intermediate columns for calculations
 |> DF.mutate(
   th_os: ^th_os,
   n_obs: ^window,
   f_os: n_os / ^window
 )
-
 # Compute the Kupiec likelihood ratio
 |> DF.mutate(
   num: th_os ** n_os * (1 - th_os) ** (n_obs - n_os),
@@ -503,249 +289,94 @@ DF.new(%{
     :p_value,
     DS.transform(
       df["kupiec_lr"],
-      fn x ->
-        1 - Statistics.Distributions.Chisq.cdf(1).(x)
-      end
+      fn x -> 1 - Statistics.Distributions.Chisq.cdf(1).(x) end
     )
   )
 end)
-|> DF.filter(p_value < ^pvalue_cutoff)
-|> DF.print()
-```
 
----
-
-## Numerical Elixir
-
-Numerical Elixir, or `Nx` for short, is a library that brings the concept of
-"tensors" (multi-dimensional arrays) to Elixir, the lowest level abstraction
-used in numerical work. It also allows to compile Elixir to the GPU for faster
-computations, and supports automatic differentiation, making it more than a
-`numpy` replacement.
-
-Let's define a tensor and compute the difference between successive numbers.
-
-```elixir title="hi"
-Nx.tensor([1, 6, 7, 4, 3, 2, 8, 3])
-|> Nx.diff()
-|> IO.inspect()
-
-#   #Nx.Tensor<
-#     s32[7]
-#     [5, 1, -3, -1, -1, 6, -5]
-#   >
-```
-
-Simple enough, right?
-
-For something a bit more complicated, let's generate a random vector using
-a normal distribution, and compute the 95th percentile.
-
-Simulating random data is done via the [`Nx.Random`](https://hexdocs.pm/nx/Nx.Random.html)
-module:
-
-```elixir
-{arr, _new_key} =
-  Nx.Random.key(1)
-  |> Nx.Random.normal(0, 1, shape: {500})
-
-IO.inspect(arr)
-
-#    #Nx.Tensor<
-#    f32[500]
-#    [-1.9280794858932495, -0.8847223520278931, 2.186722993850708, ...]
-#    >
-```
-
-If you're wondering what "keys" are in this context, think of them as the state
-of the pseudo-random number generator ("PRNG" for short). We start by generating
-a key using an integer seed (here, `1`), and generating a vector will also
-generate a new key. Should we wish to generate a new vector, backed by the same
-initial seed, we would use that new key to do so.
-
-Right now, `Nx` does not cover many distributions (especially when comparing it
-to `scipy.stats`), but we could realistically implement our own functions to
-perform the necessary Probability-Integral Transforms ("PIT").
-
-While `Nx` has quite a few pre-built functions, it doesn't have as many as
-`numpy` for example. Let's build a `Stats` module that will include utility
-functions needed to illustrate the power of Elixir for data exploration.
-
-```elixir
-defmodule Stats do
-  import Nx.Defn
-
-  defn quantile(t, q) do
-  end
-
-  defn ecdf(t) do
-  end
-end
-```
-
-In the stubbed module, we can already notice two things:
-
-- `import Nx.Defn` indicates that our code is a numerical definition, and that
-  it needs to be traced so that it can be compiled and optimized.
-- Functions are defined using `defn` instead of `def`, which converts Elixir
-  constructs inside the functions into a sub-scope of the language that operates
-  on tensors. Within such a function `a / b` will be the element-wise division
-  on tensors instead of the scalar division.
-
-The function for the `quantile/2` function is quite basic:
-
-- We start by sorting the array;
-- We then find which fractional index would match our quantile;
-- Because that index is most likely not going to be an integer, we perform a
-  linear interpolation to find the empirical quantile.
-
-```elixir
-defmodule Stats do
-  import Nx.Defn
-
-  defn quantile(t, q) do
-    sorted = Nx.sort(t)
-    {n} = Nx.shape(sorted)
-
-    # The exact fractional index for our quantile
-    idx = Nx.multiply(Nx.as_type(n - 1, :f32), q)
-
-    # Linear interpolation
-    lower = Nx.floor(idx) |> Nx.as_type({:s, 64})
-    upper = Nx.ceil(idx) |> Nx.as_type({:s, 64})
-
-    v0 = Nx.take(sorted, lower)
-    v1 = Nx.take(sorted, upper)
-
-    w = idx - Nx.floor(idx)
-    v0 * (1 - w) + v1 * w
-  end
-end
-```
-
-The empirical cumulative distribution function is also quite straightforward:
-
-```elixir
-defmodule Stats do
-  # ...
-
-  defn ecdf(t) do
-    sorted = Nx.sort(t)
-    {n} = Nx.shape(sorted)
-    nf = Nx.as_type(n, :f32)
-
-    ones = Nx.broadcast(1.0, {n})
-    cumcounts = Nx.cumulative_sum(ones)
-
-    ps = cumcounts / nf
-
-    # We re-obtain the indexes of the original tensor
-    sorted_indices = Nx.argsort(t)
-    inv_indices = Nx.argsort(sorted_indices)
-
-    # We re-index the probabilities to get those in the original order
-    Nx.take(ps, inv_indices)
-  end
-
-end
-```
-
-## Data exploration
-
-Working with tensors is great, but in many situations, we will not need to
-work in multi-dimensional space, and instead, we will have **tabular data**,
-i.e. a set of **labelled**, 1-dimensional arrays. In Python, the excellent
-`pandas` allows us to deal with that type of data quite easily, providing
-convenience functions and tools right at our fingertips.
-
-But there is a new kid on the block. `polars` is a Rust library with Python
-bindings that provides a much nicer (in my opinion) user experience when
-building data processing pipelines. Because it is not a Python-native library,
-it was only a matter of time before bindings for other languages started popping
-up. Enter [`Explorer`](https://hexdocs.pm/explorer/Explorer.html), Elixir's
-very own data exploration library.
-
-Let's try to take our simulated random vector, compute the `ecdf` and put it all
-in a single **dataframe**.
-
-```elixir
-require Explorer.DataFrame, as: DF
-require Explorer.Series, as: DS
-
-ds = DS.from_tensor(arr)
-
-df =
-  DF.new(%{
-    idx: DS.row_index(ds),
-    sims: ds,
-    ecdf: ds |> Stats.ecdf() |> DS.from_tensor()
-  })
-
-df
+# Only retain important information
+|> DF.filter(p_value < ^test_cf)
+|> DF.select([:idx, :kupiec_lr, :p_value])
 |> DF.print()
 
-#    +----------------------------------------------------+
-#    |    Explorer DataFrame: [rows: 500, columns: 3]     |
-#    +-------+----------------------+---------------------+
-#    |  idx  |         ecdf         |        sims         |
-#    | <u32> |        <f32>         |        <f32>        |
-#    +=======+======================+=====================+
-#    | 0     | 0.024000000208616257 | -1.9280794858932495 |
-#    | 1     | 0.17599999904632568  | -0.8847223520278931 |
-#    | 2     | 0.984000027179718    | 2.186722993850708   |
-#    | 3     | 0.13199999928474426  | -1.0671522617340088 |
-#    | 4     | 0.7940000295639038   | 0.7586699724197388  |
-#    +-------+----------------------+---------------------+
+#   +--------------------------------------------------+
+#   |   Explorer DataFrame: [rows: 555, columns: 3]    |
+#   +-------+-------------------+----------------------+
+#   |  idx  |     kupiec_lr     |       p_value        |
+#   | <s32> |       <f64>       |        <f64>         |
+#   +=======+===================+======================+
+#   | 2356  | 5.025167926750725 | 0.024981503053449705 |
+#   +-------+-------------------+----------------------+
+#   | 2357  | 5.025167926750725 | 0.024981503053449705 |
+#   +-------+-------------------+----------------------+
+#   | 2358  | 5.025167926750725 | 0.024981503053449705 |
+#   +-------+-------------------+----------------------+
+#   | 2359  | 5.025167926750725 | 0.024981503053449705 |
+#   +-------+-------------------+----------------------+
+#   | 2360  | 5.025167926750725 | 0.024981503053449705 |
+#   +-------+-------------------+----------------------+
 ```
 
-Say we want to identify the left tail of the empirical distribution. Let's add a
-column that marks the relevant data points. To do so, we **mutate** the original
-dataframe, adding a column called `tail`, defined based on a conditional. For that,
-we can use the Elixir `cond` construct, which goes to the first branch that evaluates
-to `true`.
+This is our need for ergonomic tabular data handling met! ✅
+
+### Charting in Elixir
+
+There are many ways to build charts in Elixir, but they often require us to bind to an external engine, either via a NIF or Javascript.
+
+For example, nothing prevents us to take a dataset, turn it into JSON, and then pipe it into a graph built with tools like [`ECharts`](https://echarts.apache.org/handbook/en/get-started/) or [`D3`](https://d3js.org/).
+
+For something a little bit more ergonomic, we can use the Livebook-maintained [`vega_lite`](https://hex.pm/packages/vega_lite/0.1.11) library, which provides convenient functions for building up [VegaLite](https://vega.github.io/vega-lite/) graph specifications, and then use [`vega_lite_convert`](https://hex.pm/packages/vega_lite_convert/1.0.1), which binds to a Rust conversion library for VegaLite.
+
+Let's build a chart for out p-values of our Kupiec test defined above.
 
 ```elixir
-df
-|> DF.mutate(
-  tail:
-    cond do
-      ecdf < 0.05 -> true
-      true -> false
-    end
+alias VegaLite, as: Vl
+
+df = ...
+
+# Create a new chart
+Vl.new(
+  width: 800,
+  height: 400,
+  title: "Kupiec POF p-values over time"
 )
-|> DF.print()
+|> Vl.config(
+  view: [fill: :white],
+  padding: 20
+)
+# Bind data to the chart
+|> Vl.data_from_values(
+  idx: df["idx"] |> DS.to_list(),
+  p_value: df["p_value"] |> DS.to_list()
+)
+|> Vl.layers([
+  # Our first layer, the actual data
+  Vl.new()
+  |> Vl.mark(:line)
+  |> Vl.encode_field(:x, "idx", type: :quantitative, axis: [title: "Time step"])
+  |> Vl.encode_field(:y, "p_value", type: :quantitative, axis: [format: ".0%", title: "P-value"]),
 
-#   +----------------------------------------------------------------+
-#   |          Explorer DataFrame: [rows: 500, columns: 4]           |
-#   +-------+----------------------+---------------------+-----------+
-#   |  idx  |         ecdf         |        sims         |   tail    |
-#   | <u32> |        <f32>         |        <f32>        | <boolean> |
-#   +=======+======================+=====================+===========+
-#   | 0     | 0.024000000208616257 | -1.9280794858932495 | true      |
-#   | 1     | 0.17599999904632568  | -0.8847223520278931 | false     |
-#   | 2     | 0.984000027179718    | 2.186722993850708   | false     |
-#   | 3     | 0.13199999928474426  | -1.0671522617340088 | false     |
-#   | 4     | 0.7940000295639038   | 0.7586699724197388  | false     |
-#   +-------+----------------------+---------------------+-----------+
+  # A horizontal line that shows the p-value threshold
+  Vl.new()
+  |> Vl.mark(:rule, color: "red", stroke_dash: [4, 4])
+  |> Vl.encode(:y, datum: 0.05, type: :quantitative)
+])
+# Conversion to an image file
+|> VegaLite.Convert.save!("vegalite-chart.png", ppi: 300)
 ```
 
-To filter and only retain the tail, we could now do:
+![](/assets/images/vegalite-chart.png)
 
-```elixir
-df
-|> DF.filter(tail == true)
-|> DF.print()
+The [documentation](https://vega.github.io/vega-lite/docs/) for VegaLite is excellent, and the Elixir package is pretty transparent, making it quite easy to build the charts we want. I have also found that LLMs do a pretty good job at providing the required API when I've forgotten how to do something specific.
 
-#   +----------------------------------------------------------------+
-#   |           Explorer DataFrame: [rows: 24, columns: 4]           |
-#   +-------+----------------------+---------------------+-----------+
-#   |  idx  |         ecdf         |        sims         |   tail    |
-#   | <u32> |        <f32>         |        <f32>        | <boolean> |
-#   +=======+======================+=====================+===========+
-#   | 0     | 0.024000000208616257 | -1.9280794858932495 | true      |
-#   | 39    | 0.004000000189989805 | -2.4354138374328613 | true      |
-#   | 88    | 0.009999999776482582 | -2.26308536529541   | true      |
-#   | 90    | 0.03799999877810478  | -1.7967510223388672 | true      |
-#   | 145   | 0.029999999329447746 | -1.8722012042999268 | true      |
-#   +-------+----------------------+---------------------+-----------+
-```
+Charting is quite easy in Elixir, and we can always use a Javascript if we need something highly interactive (just like we do it in Python)! ✅
+
+## Conclusion
+
+Elixir has one of the strongest community surrounding a programming language I have ever seen. While it is a niche language, with only 2.1% of the 2024 StackOverflow reporting having done significant work with it over the year, it is one of that developers enjoy a whole lot, with 76% of the same respondents reporting wanting to use it in the future.
+
+The elegance of the language coupled with the concurrency model provided by the BEAM makes it a compelling language for writing all kinds of applications, mostly on the backend side of things.
+
+Since it seems that it can mostly replace Python for my kind of work, and has a decent interoperability story with Python, it is definitely a technology I will keep learning and invest into.
+
+Stay tuned for more Elixir content!

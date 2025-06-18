@@ -1,6 +1,6 @@
 defmodule PipeDreams.Post do
-  @enforce_keys [:id, :author, :title, :body, :description, :tags, :date, :path]
-  defstruct [:id, :author, :title, :body, :description, :tags, :date, :path]
+  @enforce_keys [:id, :author, :title, :body, :description, :tags, :date, :path, :draft?]
+  defstruct [:id, :author, :title, :body, :description, :tags, :date, :path, :draft?]
 
   def build(filename, attrs, body) do
     path = Path.rootname(filename)
