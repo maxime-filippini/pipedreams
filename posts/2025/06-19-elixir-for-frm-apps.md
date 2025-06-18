@@ -4,7 +4,15 @@ title: "📈 Elixir, a good fit for financial risk management applications?",
 author: "Maxime Filippini",
 tags: ["elixir", "risk management", "finance", "data analysis", "python"],
 description: """
-Can Elixir be used for building finance/risk management-centric apps?
+Elixir is a great language for building servers and web applications. But can it
+be used effectively for building applications that require the use of a scientific
+stack? Those would usually be built using Python, given the large ecosystem that
+language has to offer.
+
+Since falling in love with Elixir, I've wondered if Python could be ditched for
+the specific use case of building finance/risk-management-related applications.
+
+Can it? Let's explore!
 """
 }
 
