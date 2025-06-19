@@ -27,12 +27,12 @@ On top of the functional philosophy which aims to eliminate or at the very least
 ```elixir
 # This code runs in a process
 x = 10
-spawn(fn -> x ** 2 end) # This code runs in another separate process
+spawn(fn -> x ** 2 end) # This code runs in a separate process!
 ```
 
 Elixir also brings a powerful macro system that transforms the Elixir AST at
-compile time, and make writing code more compact. For example, a route definition
-in the scope of a web-server controller could be written as such (see [`Plug.Router`](https://hexdocs.pm/plug/readme.html#plug-router)).
+compile time, which can make writing code much more compact. For example, the router inside of a web server
+could be written as such (see [`Plug.Router`](https://hexdocs.pm/plug/readme.html#plug-router)).
 
 ```elixir
 get "/hello" do
@@ -44,9 +44,7 @@ match _ do
 end
 ```
 
-But I work in financial risk management, an area that requires of a programming
-language to provide data exploration capabilities, numerical computing packages
-with decent performance, as well as good tooling.
+But my work is in financial risk management, an area that requires of a programming language to provide data exploration capabilities, numerical computing packages with decent performance, as well as good tooling.
 
 **Can Elixir tick those boxes? To which extent would I still need Python to do that work?**
 
@@ -54,17 +52,11 @@ In this post, I take a closer look at Elixir’s ecosystem with those questions 
 
 ## Numerical computing
 
-In the last few years, the Elixir team has made a large effort to bridge a gap
-identified in BEAM languages: _the lack of libraries and tooling for numerical
-computing_. The fault tolerance, high concurrency, and distribution capabilities
-of the BEAM makes it a great target for implementing machine learning algorithm,
-as long as the linear algebra toolbox is there.
+In the last few years, the Elixir team has made a large effort to bridge a gap identified in BEAM languages: _the lack of libraries and tooling for numerical computing_. The fault tolerance, high concurrency, and distribution capabilities of the BEAM makes it a great target for implementing machine learning algorithm, as long as the linear algebra toolbox is there.
 
 This is why `Nx` ("Numerical Elixir") was born.
 
-`Nx`'s main contribution is the definition of **tensors** in Elixir (i.e.
-multi-dimensional arrays), as well as operations on these tensors. For example,
-defining a vector and computing the differences between neighbors can be written:
+`Nx`'s main contribution is the definition of **tensors** in Elixir (i.e. multi-dimensional arrays), as well as operations on these tensors. For example, defining a vector and computing the differences between neighbors can be written:
 
 ```elixir
 Nx.tensor([1, 6, 7, 4, 3, 2, 8, 3])
@@ -101,12 +93,9 @@ generate a new key. Should we wish to generate a new vector, backed by the same
 initial seed, we would use that new key to do so.
 </p>
 
-For now, `Nx` seems like a replacement for Python's `numpy` library. But, it
-also provides additional functionality. For instance, `Nx` allows us to turn
-our computations into graphs that can be optimized and compiled to run on
-accelerators (GPUs or TPUs).
+For now, `Nx` seems like a replacement for Python's `numpy` library. But, it also provides additional functionality. For instance, `Nx` allows us to turn our computations into graphs that can be optimized and compiled to run on accelerators (GPUs or TPUs), making it more akin to a library like `pytorch`.
 
-For example, the `substract` function in the following code uses the `defn` macro (as opposed to `def`, which is used for normal Elixir functions) provided by `Nx.Defn` to make it operate on tensors, and compile it for efficient use.
+For example, the `substract` function (an admittedly contrived example) in the following code uses the `defn` macro (as opposed to `def`, which is used for normal Elixir functions) provided by `Nx.Defn` to make it operate on tensors, and allows us to compile it for efficient use.
 
 ```elixir
 defmodule TensorMath do
@@ -119,7 +108,7 @@ end
 ```
 
 Finally, `Nx` also provides auto-differentiation for functions defined using
-`defn`, which is useful for optimization of models. Here is a trivial example
+`defn`, which is useful for calibrating models. Here is a trivial example
 using a quadratic polynomial.
 
 ```elixir
@@ -186,7 +175,7 @@ dependencies = [
 # :ok
 ```
 
-However, because of the Global Interpreter Lock ("GIL"), we are unfortunately limited to running a single `Pythonx` interpreter per BEAM instance, which means we cannot easily benefit from the concurrency model that Elixir provides.
+However, because of the Global Interpreter Lock ("GIL"), we are ([for now](https://peps.python.org/pep-0703/)) unfortunately limited to running a single `Pythonx` interpreter per BEAM instance, which means we cannot easily benefit from the concurrency model that Elixir provides.
 
 For use in a production server where concurrency is likely to be important, we would consider the following patterns:
 
@@ -218,13 +207,11 @@ and `matplotlib`.
 
 ### Livebook - A cell-based code editor for Elixir, and much more
 
-Livebook is a web-based interactive notebook application built for Elixir.
-Much like Jupyter notebooks in the Python ecosystem, Livebook enables us to
-combine code, text, and visualizations in a single, executable document.
+Livebook is a web-based interactive notebook application built for Elixir. Much like Jupyter notebooks in the Python ecosystem, Livebook enables us to combine code, text, and visualizations in a single, executable document.
 
 However, Livebook is much more than a re-implementation of Jupyter notebooks, as it has been built to take full advantage of the BEAM and Elixir. For example, you can use a Livebook to introspect a **live, running system** (e.g. a Phoenix web application) using the power of [Distributed Elixir](https://hexdocs.pm/elixir/distributed-tasks.html). In addition, Livebook is aware of variables used in each cells and will make sure to re-compute any stale cells those variables are involved in, thus avoiding the most stale data issue that is ubiquitous to any Jupyter-based workflow.
 
-For a mindblowing demo showing off what Livebook has to offer, I recommend the following talk by Elixir's creator, José Valim:
+For a mind-blowing demo showing off what Livebook has to offer, I recommend the following talk by Elixir's creator, José Valim:
 
 <iframe class="w-full" height="400" src="https://www.youtube.com/embed/pas9WdWIBHs?si=vM36kB_QPDmXDQX4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
@@ -232,11 +219,7 @@ That's our first box ticked! ✅
 
 ### Explorer - An elegant dataframe library
 
-Working with `Nx` tensors is great, but in many situations, we will not need to
-work in multi-dimensional space, and instead, we will have **tabular data**,
-i.e. a set of **labelled**, 1-dimensional arrays. In Python, the excellent
-`pandas` allows us to deal with that type of data quite easily, providing
-convenience functions and tools right at our fingertips.
+Working with `Nx` tensors is great, but in many situations, we will not need to work in multi-dimensional space, and instead, we will have **tabular data**, i.e. a set of **labelled**, 1-dimensional arrays. In Python, the excellent `pandas` allows us to deal with that type of data quite easily, providing convenience functions and tools right at our fingertips.
 
 In Elixir, we have [`Explorer`](https://hexdocs.pm/explorer/Explorer.html), a library that wears its influence by [`dplyr`](https://dplyr.tidyverse.org/) on its sleeve, and boasts high speeds by leveraging on a [`polars`](https://pola.rs/) backend.
 
@@ -381,7 +364,7 @@ Charting is quite easy in Elixir, and we can always use a Javascript if we need 
 
 ## Conclusion
 
-Elixir has one of the strongest community surrounding a programming language I have ever seen. While it is a niche language, with only 2.1% of the 2024 StackOverflow reporting having done significant work with it over the year, it is one of that developers enjoy a whole lot, with 76% of the same respondents reporting wanting to use it in the future.
+Elixir has one of the strongest community surrounding a programming language I have ever seen. While it is a niche language, with only 2.1% of the 2024 StackOverflow reporting having done significant work with it over the year, it is one of that developers enjoy a whole lot, with 76% of the same respondents reporting that they admire the language.
 
 The elegance of the language coupled with the concurrency model provided by the BEAM makes it a compelling language for writing all kinds of applications, mostly on the backend side of things.
 
