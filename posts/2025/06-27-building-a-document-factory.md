@@ -4,7 +4,12 @@ title: "📄 Building a document factory in Elixir",
 author: "Maxime Filippini",
 tags: ["elixir", "automation", "pipeline", "documents", "pdf"],
 description: """
-TBD
+In this post, we show how we can build a fast prototype for a “document factory” in Elixir, watching a folder for JSON,
+turning the data into Tailwind-styled HEEx templates with charts,
+then streaming them through a GenStage pipeline to ChromicPDF for concurrent,
+fault-tolerant HTML → PDF conversion.
+
+If that sounds up your alley, give it a look!
 """
 }
 
