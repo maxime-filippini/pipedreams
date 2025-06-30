@@ -25,3 +25,5 @@ pipedreams-*.tar
 
 /output/
 /.vscode/
+
+.DS_Store
