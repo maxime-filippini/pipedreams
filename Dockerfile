@@ -1,10 +1,10 @@
-FROM elixir:1.18.4-alpine AS build
+FROM elixir:1.18.3-alpine AS build
 WORKDIR /app
 COPY mix.exs mix.lock ./
 
 RUN mix local.hex --force \
  && mix local.rebar --force \
- && mix deps.get --only prod
+ && mix deps.get
 
 COPY . .
 
