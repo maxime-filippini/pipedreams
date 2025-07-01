@@ -15,61 +15,43 @@ If that sounds up your alley, give it a look!
 
 ---
 
-<!--
+In the [last post](/posts/2025/06-19-elixir-for-frm-apps.html) we tested Elixir’s chops for finance and risk-management workloads using Nx, Pythonx, VegaLite, and Livebook. Today we’ll play to Elixir’s strengths by building a **document factory**, a service that turns user data into polished PDFs based on predefined templates.
 
-Description of the application, its objectives. What features of Elixir does it use?
+This kind of application is quite common in finance, where regulation requires adequate communication and disclosures of product specifications as well as risk measures. Our goal is to automate the production of the documents containing these disclosures and fold it into a robust Elixir data pipeline.
 
-Building a data pipeline
-  Why a data pipeline?
-  Base principles of genstage
-  Our code
-
-Building documents
-
-
--->
-
-In the [last post](/posts/2025/06-19-elixir-for-frm-apps.html), we explored the feasibility of using Elixir to build finance and risk management application, via libraries like `Nx`, `Pythonx`, `VegaLite` and tools like Livebook. In this post, we stay a little bit closer to Elixir's wheelhouse, by building a **document factory**, a service that will build PDFs according to a pre-defined format and user-supplied data.
-
-This kind of application is quite common in finance, where regulation requires adequate communication of product specificities as well as risk measures. Often, said communication is done in the form of a standardized document, filled with proprietary data.
-
-If you're interested in seeing how we can build these document templates, how we can render them to PDFs, and how we can build this whole process as a robust data pipeline in Elixir, this post is for you! Let's get into it.
+If you're interested in seeing how to design templates for these documents, render them to PDFs, and orchestrate the whole production flow, read on. I hope you will find it informative.
 
 ## Our objectives and high level technical considerations
 
-Our objectives with this application are rather simple:
+Our objectives with this application are straightforward:
 
 <div class="p-4 font-bold text-center align-middle bg-white border rounded-lg border-violet-300">
-Be able to generate a large number of documents, on request, with consistent throughput, with a flexible solution for writing templates.
+Be able to generate a large number of documents <span class="underline">on request</span>, with <span class="underline">consistent throughput</span>, with a <span class="underline">flexible solution for writing templates</span>.
 </div>
 
-Our basic document template will be for a "factsheet" of sort, as shown below:
+Our basic document template will be for a "factsheet" of sorts, as shown below:
 
 ![](/assets/images/doc-factory/sample-report.png)
 
-Our strategy for building PDF documents is one that will be very familiar to anyone having undertaken that kind of work: **build an HTML document first, and a [headless browser](https://en.wikipedia.org/wiki/Headless_browser) to render it to PDF**.
+**How will our users request the building of documents?** We will keep it simple and have our application watch a specific folder for files whose name matches a certain pattern. In production we'd swap that for, say, S3 event notifications, but the logic would stay the same.
 
-How will our users request the building of documents? We will keep it simple and have our application watch a specific folder for files whose name match a certain pattern. This is not too dissimilar to how we would set this up in a production environment, for example by hooking into events on an S3 bucket.
-
-In order to ensure consistent throughput and avoid any bottlenecks in our document generation jobs, our application will take the form of a **data pipeline**, where concurrent computations will be given the appropriate amount of resources based on how much work they can handle.
+To guarantee steady throughput, we'll implement the service as a **data pipeline** that assigns resources to each concurrent job according to workload.
 
 In the next sections, we will first go over how we can go and build our documents in a programmatic way, to then focus on putting together the pipeline, and cap it all off with a few test runs with realistic loads.
 
 ## Building documents
 
-In this section, we provide one approach of automating document creation. This approach is quite commonplace and anyone who has worked in that space will feel right at home!
+In this section, we provide one approach of automating document creation. This approach is quite commonplace and I'm sure anyone who has worked in that space will feel right at home!
 
 ### How to build PDF documents in Elixir
 
-Generating PDFs is generally done in the same way in every language these days, and leverages on the ability of browsers to take a web-page and save it to a PDF document.
+Modern PDF generation usually piggybacks on a browser's built-in "_Print to PDF_" feature. We’ll do the same: **render a print-friendly HTML page, let a [headless Chrome](https://en.wikipedia.org/wiki/Headless_browser) instance "print" it, and grab the resulting file**.
 
 <div class="flex items-center justify-center w-full h-96">
   <img src="/assets/images/doc-factory/print-to-pdf.png" alt="A browser window showing a 'Save as PDF' option" class="object-contain h-full">
 </div>
 
-This process of saving a webpage can be automated by controlling a "[headless browser](https://en.wikipedia.org/wiki/Headless_browser)" in our programs. By invoking the "Save as PDF" command on a pre-built html document, we should be able to obtain a PDF file with the same layout and styles.
-
-**But browsers are mostly made for rendering web pages**, so we will build our document as a print-friendly web-page first. Our process will look a little bit like this:
+Conceptually the flow looks like this:
 
 <center>
 
@@ -86,7 +68,7 @@ To run a headless browser in Elixir for the specific purpose of building PDF doc
 
 `ChromicPDF` works by launching a Chrome process as well as a pool of targets that will be running the PDF conversion jobs. This pool is then attached to our application, which supervises it, thus enabling concurrency and fault tolerance, as per the BEAM principles.
 
-Our application entry point would therefore look like the following:
+To attach `ChromicPDF` to our application, we need to add it to the processes supervised by our application's supervisor, which is located in the `application.ex` in our Mix project (after installing it as a dependency), as shown below.
 
 ```elixir
 defmodule Docmaker.Application do
@@ -123,8 +105,7 @@ defmodule Docmaker.Application do
 end
 ```
 
-To turn an existing HTML document into a PDF within our application is then
-very simple:
+Once we have access to ChromicPDF in our application, using it to convert HTML documents is very simple, **just call `ChromicPDF.print_to_pdf/2`, and pass it either an HTML string, or the path to an HTML file**:
 
 ```elixir
 defmodule Examples.Conversion do
@@ -144,7 +125,7 @@ defmodule Examples.Conversion do
 end
 ```
 
-Because `ChromicPDF` uses [`NimblePool`](https://hexdocs.pm/nimble_pool/NimblePool.html) under the hood, we do not have to manage the Chrome session ourselves, and instead, we simply call `print_to_pdf` which will call the appropriate resource to do the work. To stay concurrent however, we need to make sure these function calls are performed by different BEAM processes.
+Because `ChromicPDF` uses [`NimblePool`](https://hexdocs.pm/nimble_pool/NimblePool.html) under the hood, we do not have to manage the Chrome session ourselves, ChromicPDF will take care of everything, with the settings we loaded in `application.ex`. For these conversions to be done concurrently however, we need to make sure that the calls to `ChromicPDF.print_to_pdf/2` are performed by different BEAM processes.
 
 We show a simple implementation for processing a list of HTML files below, using `Task.async_stream` to spawn new single-purpose processes, and then `Enum.to_list` to collect the outputs.
 
@@ -166,8 +147,7 @@ end
 
 ### Building HTML documents
 
-Depending on the complexity of HTML documents, one may start by considering
-interpolating Elixir variables directly into a string. For example:
+Depending on the complexity of HTML documents, one may start by considering interpolating Elixir variables directly into a string. For example, we could add a title and a body to an HTML document like this:
 
 ```elixir
 defmodule Examples.Html do
@@ -178,7 +158,7 @@ defmodule Examples.Html do
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Document</title>
+        <title>#{doc_title}</title>
       </head>
       <body>
         <h1>#{doc_title}</h1>
@@ -192,12 +172,21 @@ defmodule Examples.Html do
 end
 ```
 
-This approach works fine for **very simple use cases**, but it will very quickly become a nightmare to maintain, as we have to handle the string conversion ourselves, we do not benefit from any kind of syntax highlighting, and accepting unescaped user input may lead to them injecting scripts in our documents, which will execute in Chrome, and potentially wreck havoc in our system.
+This approach works fine for **very simple use cases**, but it will very quickly become a nightmare to maintain, as we do not get to enjoy any kind of syntax highlighting. We'd also have to make sure every user input is escaped properly, as unescaped user input may lead to them injecting scripts in our documents, which will execute in Chrome during conversion, and potentially wreak havoc in our system.
 
-The safer and more maintainable option is to use **HTML templates**. In Python, we have libraries like Jinja2 that allow us to do just that. In Elixir, we leverage on the amazing [`Phoenix`](https://www.phoenixframework.org/) framework, which ships with a Component model that allows us to write Elixir in HTML templates, written using [`HEEx`](https://hexdocs.pm/phoenix/components.html).
+> Imagine someone supplying something like this for `doc_title`:
+>
+> ```html
+> </title>
+>   <script>alert("some malicious script")</script>
+> <title>
+> ```
+>
+> This is a simple Javascript injection, made way too easy by interpolating unescaped Elixir strings into HTML.
 
-To build a Phoenix HTML component, we simply add `use Phoenix.Component` at the
-top of our module, and define a function that will return a HEEx template (defined using the `~H` [sigil](https://hexdocs.pm/elixir/sigils.html)). A HEEx template is HTML written in a string but that allows us to compose these components, evaluate loops, etc.
+The safer and more maintainable option is to use **HTML templates**. In Python, we have libraries like [`Jinja2`](https://jinja.palletsprojects.com/en/stable/) that allow us to do just that. In Elixir, we leverage on the amazing [`Phoenix`](https://www.phoenixframework.org/) framework, which ships with a component model that allows us to write Elixir in HTML templates, written using [`HEEx`](https://hexdocs.pm/phoenix/components.html).
+
+To build a Phoenix HTML component, we simply add `use Phoenix.Component` at the top of our module, and define a function that will return a HEEx template (defined using the `~H` [sigil](https://hexdocs.pm/elixir/sigils.html)). A HEEx template is HTML written in a string but that allows us to compose these components, evaluate loops, etc. In our editor, we also benefit from HTML syntax highlighting for those strings, even if they're written in a `.ex` file.
 
 For example, the `LinkList` component below will render a title and a list of links based on arguments provided by the user (here `title` and `links`).
 
@@ -205,6 +194,7 @@ For example, the `LinkList` component below will render a title and a list of li
 defmodule Examples.LinkList do
   use Phoenix.Component
 
+  # Component attributes
   attr :title, :string, required: true
   attr :links, :list, default: []
 
@@ -266,7 +256,7 @@ html =
 
 ### Building our document layout
 
-To build a layout for our documents, we leverage on [Tailwind](https://tailwindcss.com/), which allows us to incorporate styles directly in our HTML, and therefore in our Phoenix components.
+To build a layout for our documents, we use [Tailwind](https://tailwindcss.com/), a great CSS framework that allows us to incorporate styles directly in our HTML, and therefore in our Phoenix components.
 
 For that, we can use the [`tailwind`](https://hexdocs.pm/tailwind/Tailwind.html) tool in Elixir, which can help us manage the Tailwind version using a Mix configuration inside of our project, thus avoiding to bring in Javascript configuration into it.
 
@@ -276,6 +266,10 @@ We start by building our `Main` layout as a Phoenix component that will set some
 defmodule Layouts.Main do
   use Phoenix.Component
 
+  attr :css, :string, required: true
+  attr :watermark?, :boolean, default: false
+  slot :inner_block
+
   def render(assigns) do
     ~H"""
     <!DOCTYPE html>
@@ -283,16 +277,22 @@ defmodule Layouts.Main do
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="stylesheet" href={"file:///#{@css_path}"} />
         <style>
           @page {
             margin: 0;
+            size: A4;
           }
         </style>
-        <title>{@doc_title}</title>
+        <style>
+          <!-- The CSS generated by Tailwind will go here -->
+        </style>
+        <title>Document</title>
       </head>
-      <body class="flex flex-col w-screen h-screen p-8 bg-white">
-        {render_slot(@inner_block)}
+      <body class="bg-white max-h-[1122px] overflow-auto w-screen flex flex-col p-2">
+        <!-- Content -->
+        <div class="w-full h-full">
+          {render_slot(@inner_block)}
+        </div>
       </body>
     </html>
     """
@@ -306,7 +306,7 @@ defmodule Layouts.Grid do
 
   def render(assigns) do
     ~H"""
-    <Layouts.Main.render css_path={@css_path} watermark?={@watermark?}>
+    <Layouts.Main.render css={@css} watermark?={@watermark?}>
       <div class="flex items-center justify-center w-full py-4">
         <h1 class="w-full text-xl font-semibold text-center">
           Summary report
@@ -376,12 +376,12 @@ The files our pipeline will be using to build the documents will be in JSON form
 
 _(Note: data in the `data` and `perf` lists has been heavily truncated for brevity.)_
 
-Our processing steps are relatively simple:
+Our processing steps are much simpler than what we would have for a real document, but should be enough to illustrate what we are trying to do.
 
-- We want to compute the total `value` of assets;
-- We want to isolate the top 5 positions in terms of `value`;
-- We want to compute the aggregated value for each `category` (i.e. asset class);
-- We want to build pie charts and tables from that processed data.
+- We compute the total `value` of assets;
+- We isolate the top 5 positions in terms of `value`;
+- We compute the aggregated value for each `category` (i.e. asset class);
+- We build pie charts and tables from that processed data.
 
 The code for these steps is provided below, with some comments:
 
@@ -433,8 +433,7 @@ defmodule Layouts.Grid do
 end
 ```
 
-This `prepare_data/1` function will be called to update the map that has been
-passed to `Layouts.Grid` so we can then use the prepared data in our HEEx template.
+This `prepare_data/1` function will be called to update the map that has been passed to `Layouts.Grid` so we can then use the prepared data in our HEEx template.
 
 For building the tables and charts, we have built specific Phoenix components that expect to receive data via attributes, perform the necessary transformations, and, for charts, build the SVGs we need and insert them into the HTML. We provide the example of the performance chart component below.
 
@@ -488,19 +487,17 @@ defmodule Components.LineChart do
 end
 ```
 
-That's all there is to it! Call `Layouts.Grid.render/1` and `Phoenix.HTML.Safe.to_iodata/0` with the right data map, and you will obtain an HTML string with the relevant data, tables and charts inserted!
+That's all there is to it! Call `Layouts.Grid.render/1` and `Phoenix.HTML.Safe.to_iodata/1` with the right data map, and you will obtain an HTML string with the relevant data, tables and charts inserted!
 
-But how can we handle requests for a large number of documents? Because ChromicPDF depends on the availability of Chrome resources for converting these documents, we will need to be quite careful to make sure our system doesn't get overloaded. This is why we are going to structure our application as a simple **data pipeline**!
+**But how can we handle requests efficiently for a large number of documents?** Because ChromicPDF depends on the availability of Chrome resources for converting these documents, we will need to be quite careful to make sure our system doesn't get overloaded. This is why we are going to structure our application as a **data pipeline**!
 
 ## Building our data pipeline
 
 ### User inputs
 
-As previously mentioned our application's entry point will be a **file watcher**. Whenever a file that matches a certain format is created or moved into a specific folder of our choosing, it will be picked up and processed.
+As previously mentioned our application's entry point will be a **file watcher**. Whenever a file that matches a certain format is created or moved into a specific folder of our choosing, it will be picked up and processed. We can imagine that this folder will either be populated by users directly (in the case of a local application), or by automated scripts (which may themselves be data pipelines!).
 
-We can imagine that this folder will either be populated by users directly (in the case of a local application), or by automated scripts (which may themselves be data pipelines!).
-
-The overall process can be illustrated as such, with our watcher sitting in front of our pipeline.
+The overall process can be illustrated as such, with our watcher sitting in front of the rest of our pipeline.
 
 <center>
 
@@ -512,7 +509,7 @@ flowchart LR
   F[[Folder]]
 
   subgraph Pipeline
-  W((Watcher))
+  W[Watcher]
   P["..."]
   end
 
@@ -520,7 +517,7 @@ flowchart LR
   S e2@-->|Deposit files| F
   W -->|Watches| F
   F ~~~ W
-  W e3@-->|Files| P
+  W e3@-->|File contents| P
 
   e1@{animate: true}
   e2@{animate: true}
@@ -533,7 +530,7 @@ In Elixir, we work with **processes**, lightweight threads of execution that can
 
 The [`file_system`](https://hexdocs.pm/file_system/readme.html) library provides a `FileSystem` GenServer (i.e. a process with state that can deal with messages using callback functions), to which other processes will be able to subscribe. To set our folder watcher, we will therefore have our own GenServer that will start the file watcher, subscribe to it, and then have a callback to handle messages from the watcher.
 
-We describe the usual process below:
+Here is the process:
 
 1. First, our GenServer will start the `FileSystem` GenServer, and get its PID (process identifier).
 1. Using that PID, our GenServer will subscribe to the `FileSystem` GenServer. Doing so means that any file event received by the latter will be sent to the former in the following form: `{:file_event, watcher_pid, {path, events}}`.
@@ -603,7 +600,7 @@ flowchart LR;
 
 A simple addition to be considered is to add a `Notifier` that will batch events and notify the requestor at the end of our pipeline, but this minimal example will get the job done for now.
 
-The main advantage of a data pipeline is that we can tune it to avoid bottlenecks. For example, imagine that `DocumentBuilder`can only realistically handle the production of 5 documents at any given time. In that situation, we need to make sure that the `FileWatcher` does not send it too many files to process. For that, the pipeline will be based on a **pull model**, where **consumers** request work from **producers**, based on their available capacity. This type of pipeline is said to provide **back-pressure**.
+The main advantage of a data pipeline is that we can tune it to avoid bottlenecks. For example, imagine that `DocumentBuilder` can only realistically handle the production of 5 documents at any given time. In that situation, we need to make sure that the `FileWatcher` does not send it too many files to process. For that, the pipeline will be based on a **pull model**, where **consumers** request work from **producers**, based on their available capacity. This type of pipeline is said to provide **back-pressure**.
 
 We have already seen how to build a file watcher in Elixir, but we now have to make a couple of modifications to make it work as a GenStage producer:
 
@@ -727,7 +724,7 @@ end
 
 As a consumer, our `DocumentBuilder` will be handling **events** it receives from upstream producers. Because we're using `GenStage`, we only have to define the `handle_events/3` function, which will take the list of events, the PID of the producer, and the current state of our consumer as arguments.
 
-As previously explained, we have to make sure that each of our conversion job is ran into a separate process so we can do that work concurrently. This is as simple as calling `Task.async_stream` on all of our events, with the appropriate `max_concurrency` parameter, although it doesn't matter here since the list of events will never be larger than our `pool_size`, as defined above.
+As previously explained, we have to make sure that each of our conversion job is run into a separate process so we can do that work concurrently. This is as simple as calling `Task.async_stream` on all of our events, with the appropriate `max_concurrency` parameter, although it doesn't matter here since the list of events will never be larger than our `pool_size`, as defined above.
 
 ```elixir
 defmodule Docmaker.DocumentBuilder do
@@ -828,7 +825,7 @@ Simulator.portfolios(n, ~D"2024-12-31")
 
 # We set up a poller to watch the watched folder.
 # The code below will keep looping until the watched folder
-#  is empty, which means we're done processing files!
+# is empty, which means we're done processing files!
 {time, result} =
   :timer.tc(fn ->
     Utils.Poller.watch(dir_path)
@@ -847,15 +844,15 @@ To run this script, we can just run the following command in our shell, which wi
 
 ```bash
 mix run ./scripts/stage.exs 1000
-Ran in 153.011942 seconds
+Ran in 89.738613 seconds
 ```
 
 ## Conclusion
 
-Generating 1,000 PDFs in about 2 and half minutes is not too shabby, although I am sure we could do better! Possible avenues to explore are of course:
+Generating 1,000 PDFs in about 1 and a half minute is not too shabby, although I am sure we could do better! Possible avenues to explore are of course:
 
-- Running on a beefier machine;
-- Distributing the workload on multiple machines (can be done natively in Elixir);
+- Running on a beefier machine, since the BEAM can vertically scale quite well;
+- Distributing the workload on multiple machines, which can be done natively in Elixir;
 - Fine-tuning our concurrency settings.
 
 On top of that, I'd like to explore the possibility of having the payload (i.e. our JSON files) provide the template to be used for rendering each document. This is not too complicated, as Elixir allows us to execute functions by programmatically providing the module and functions names like such:

@@ -23,6 +23,7 @@ module.exports = {
                 "border-radius": "var(--radius-md)",
                 "padding-inline": "calc(var(--spacing) * 1)",
               },
+            blockquote: { quotes: "none" },
           },
         },
         violet: {
