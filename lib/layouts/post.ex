@@ -16,7 +16,7 @@ defmodule Layouts.Post do
           </li>
         </ul>
       </div>
-      <article class="prose prose-violet w-full">
+      <article class="prose prose-violet sm:prose-lg">
         <%= raw @post.body %>
       </article>
     </Main.main>
