@@ -8,8 +8,7 @@ RUN mix local.hex --force \
 
 COPY config ./config
 COPY lib ./lib
-COPY priv ./priv
-
+COPY assets ./assets
 COPY posts ./posts
 
 RUN mix site.build
