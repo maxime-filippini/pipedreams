@@ -4,7 +4,7 @@ title: "👶🏼 Building baby's first AI agents with Elixir",
 author: "Maxime Filippini",
 tags: ["elixir", "ai", "agents", "otp"],
 description: """
-TBD TBD TBD TBD
+TBD TBD TBD TBD TBD
 """
 }
 
